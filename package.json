@@ -1,0 +1,17 @@
+{
+  "name": "dotgraph",
+  "version": "0.0.1",
+  "description": "Visualize graphs the JS way; using graphviz's dot",
+  "main": "./lib/dotgraph.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "graph",
+    "visualization",
+    "graphviz",
+    "dot"
+  ],
+  "author": "meisl",
+  "license": "ISC"
+}
