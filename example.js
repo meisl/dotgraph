@@ -80,19 +80,37 @@ g.func = function (f) {
     return g.addNode({
         rank:       f === Function ? 0 : 2,
         id:         f.name,
-        label:      'function\n\\N', // \N is dot-specific and means "name (id) of this node as a string"
         represents: f,
-        color:      "red",
-        fontcolor:  "red",
     });
 };
+
+g.nodeIf(util.isFunction, {
+    label:      'function\n\\N', // \N is dot-specific and means "name (id) of this node as a string"
+    color:      "red",
+    fontcolor:  "red",
+    shape:      "ellipse",
+});
+
+g.nodeIf(x => typeof x === "object", {
+    shape: "box",
+});
+
+g.nodeIf(x => (x === null) || (typeof x !== "object" && typeof x !== "function"), {
+    rank:       6,
+    color:      "purple",
+    fontcolor:  "purple",
+    shape:      "polygon",
+    sides:      6,
+});
+
+g.nodeIf(x => typeof x === "function", { rank: 2 });
+g.nodeIf(x => x === Function, { rank: 0 });
+g.nodeIf(x => x === Function.prototype, { rank: 1 });
 
 g.proto = function (p) {
     var ctor = p.constructor,
         rank;
-    if (ctor === Function) {
-        rank = 1;
-    } else if (ctor === Object) {
+    if (ctor === Object) {
         rank = 4;
     } else {
         rank = 3;
@@ -102,9 +120,6 @@ g.proto = function (p) {
         id:         ctor.name + '_proto',
         label:      (typeof p) + '\n' + ctor.name + '.prototype',
         represents: p,
-        color:      "darkgreen",
-        fontcolor:  "darkgreen",
-        shape:      "box",
     });
     return node;
 };
@@ -115,10 +130,6 @@ g.prim = function (v) {
         id:         util.isString(v) ? JSON.stringify(JSON.stringify(v)) : JSON.stringify(v),
         label:      (typeof v) + '\n\\N',
         represents: v,
-        color:      "purple",
-        fontcolor:  "purple",
-        shape:      "polygon",
-        sides:      6,
    });
 };
 
