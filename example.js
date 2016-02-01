@@ -1,6 +1,7 @@
 "use strict";
 
-var dotgraph = require('./lib/dotgraph.js');
+var util = require('util');
+var dotgraph = require('./lib/dotgraph');
 
 
 function _getID(o, where) {
@@ -101,8 +102,8 @@ g.proto = function (p) {
         id:         ctor.name + '_proto',
         label:      (typeof p) + '\n' + ctor.name + '.prototype',
         represents: p,
-        color:      "green",
-        fontcolor:  "green",
+        color:      "darkgreen",
+        fontcolor:  "darkgreen",
         shape:      "box",
     });
     return node;
@@ -111,7 +112,8 @@ g.proto = function (p) {
 g.prim = function (v) {
     return g.addNode({
         rank:       6,
-        id:         JSON.stringify(v),
+        id:         util.isString(v) ? JSON.stringify(JSON.stringify(v)) : JSON.stringify(v),
+        label:      (typeof v) + '\n\\N',
         represents: v,
         color:      "purple",
         fontcolor:  "purple",
@@ -120,58 +122,63 @@ g.prim = function (v) {
    });
 };
 
-var funcF = g.func(Function);
-var funcO = g.func(Object);
+g.inst = function (inst) {
+    var args = Array.prototype.slice.call(arguments, 1),
+        ctor = inst.constructor,
+        id   = '"new ' + ctor.name + '(' + args.map(util.inspect).join(', ') + ')"',
+        node = g.addNode({ rank: 5, id: id, label: (typeof inst) + '\n\\N', shape: "box", represents: inst  });
+    g.addPath(inst, Object.getPrototypeOf(inst)).where({ style: "bold", weight: 2 });
+    if (typeof inst.valueOf === "function") {
+        g.addPath(inst, inst.valueOf()).where({ color: "purple" });
+    }
+    return node;
+};
 
-var funcB = g.func(Boolean);
-var funcS = g.func(String);
+g.func(Function);
+g.func(Object);
+g.func(Boolean);
+g.func(String);
 
-var f_proto = g.proto(Function.prototype);
-var o_proto = g.proto(Object.prototype);
+g.proto(Function.prototype);
+g.proto(Object.prototype);
+g.proto(String.prototype);
+g.proto(Boolean.prototype);
 
-var s_proto = g.proto(String.prototype);
-var b_proto = g.proto(Boolean.prototype);
 
-var _null = g.prim(null);
+g.prim(true);
+g.prim(false);
+g.prim(undefined);
+g.prim(null);
+g.prim("");
+g.prim("foo");
 
-var _primTrue  = g.prim(true);
-var _primFalse = g.prim(false);
 
-var _oTrue  = g.addNode({ rank: 5, id: '"new Boolean(true)"',  label: 'object\n\\N', represents: new Boolean(true)  });
-var _oFalse = g.addNode({ rank: 5, id: '"new Boolean(false)"', label: 'object\n\\N', represents: new Boolean(false) });
+g.inst(new Boolean(true),  true);
+g.inst(new Boolean(false), false);
 
-g.addPath(funcF, f_proto, o_proto, _null)
+g.inst(new String());
+g.inst(new String(""), "");
+g.inst(new String("foo"), "foo");
+
+
+g.addPath(Function, Function.prototype, Object.prototype, null)
     .where({ weight: 10, style: "bold" });
 
-g.addPath(funcO, f_proto).where({ style: "bold", weight: 5, });
-g.addPath(funcB, f_proto).where({ style: "bold" });
-g.addPath(funcS, f_proto).where({ style: "bold" });
+[Object, Boolean, String, Boolean.prototype, String.prototype, true, false].forEach(x =>
+    g.addPath(x, Object.getPrototypeOf(x)).where({ style: "bold" })
+);
 
-g.addPath(s_proto, o_proto).where({ style: "bold" });
-g.addPath(b_proto, o_proto).where({ style: "bold" });
-
-
-g.addPath(funcO, o_proto).where({ color: "green", weight: 5 });
-g.addPath(funcF, f_proto).where({ color: "green", weight: 5 });
-
-g.addPath(funcB, b_proto).where({ color: "green", weight: 5 });
-g.addPath(funcS, s_proto).where({ color: "green", weight: 5 });
+[Object, Boolean, String, Function].forEach(x =>
+    g.addPath(x, x.prototype).where({ color: "green" })
+);
 
 
-g.addPath(_primTrue,  b_proto).where({ style: "bold", weight: 2, });
-g.addPath(_primFalse, b_proto).where({ style: "bold", weight: 2, });
+//g.addPath(funcS, funcO, funcB);
 
-g.addPath(_oTrue,  b_proto).where({ style: "bold", weight: 2, });
-g.addPath(_oFalse, b_proto).where({ style: "bold", weight: 2, });
-
-g.addPath(_oTrue,  _primTrue).where({ color: "purple" });
-g.addPath(_oFalse, _primFalse).where({ color: "purple" });
-
-
-g.render({ output: '../test', format: 'svg', show: true });
+g.render({ output: 'example', format: 'svg', show: true });
 //process.exit();
 
-
+//https://chart.googleapis.com/chart?cht=gv%3Adot&chl=digraph%20poset%20%7B%0Af1%20%5Blabel%3Df1%5D%3B%0Af2%20%5Blabel%3Df2%5D%3B%0Af3%20%5Blabel%3Df3%5D%3B%0Af2%20-%3E%20f1%3B%0Af3%20-%3E%20f1%3B%0A%7D
 
 function toDot(x) {
     const colors = [
