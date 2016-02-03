@@ -8,6 +8,13 @@ function isPrimitive(v) {
     return (v === null) || ((typeof v) !== 'object') && ((typeof v) !== 'function');
 }
 
+function isNullOrUndefined(v) {
+    return v === null || v === undefined;
+}
+
+function isDotPrototype(x) {
+    return !isPrimitive(x) && x.hasOwnProperty('constructor');
+}
 
 
 function _getID(o, where) {
@@ -88,9 +95,13 @@ g.nodeIf(util.isFunction, {
     shape:      "ellipse",
 });
 
+g.nodeIf(isDotPrototype, { fillcolor: "lightgreen", style: "filled" });
+g.nodeIf(x => isDotPrototype(x) && (x.constructor === Object), { rank: 4 });
+g.nodeIf(x => isDotPrototype(x) && (x.constructor !== Object), { rank: 3 });
+
 g.nodeIf(x => typeof x === "function",  { rank: 2 });
 g.nodeIf(x => x === Function,           { rank: 0 });
-g.nodeIf(x => x === Function.prototype, { rank: 1 });   //, label: "function\nFunction.prototype" });
+g.nodeIf(x => x === Function.prototype, { rank: 1 });
 
 g.nodeIf(x => typeof x === "object", {
     shape: "box",
@@ -106,14 +117,6 @@ g.nodeIf(isPrimitive, {
 });
 
 
-g.edgeIf((from, to) => (from !== null) && (from !== undefined) && (to === Object.getPrototypeOf(from)), {
-    style: "bold",
-});
-
-g.edgeIf((from, to) => (typeof from === "function") && (to === from.prototype), {
-    color: "green",
-});
-
 g.edgeIf((from, to) =>
        (from === Function)           && (to === Function.prototype)
     || (from === Function.prototype) && (to === Object.prototype)
@@ -123,49 +126,45 @@ g.edgeIf((from, to) =>
 
 
 g.func = function (f) {
-    var node;
-    g.addNode({
-        represents: f,
-    });
-    g.proto(f.prototype);
-    g.addPath(f, f.prototype);
+    g.addPath(f, f.prototype).where({ color: "green" });
+    g.addPath(f, Object.getPrototypeOf(f)).where({ style: "bold" });
+    g.addPath(f.prototype, Object.getPrototypeOf(f.prototype)).where({ style: "bold" });
 };
 
-
-g.proto = function (p) {
-    var ctor = p.constructor,
-        rank;
-    if (ctor === Object) {
-        rank = 4;
-    } else {
-        rank = 3;
-    }
-    g.addNode({
-        rank:       rank,
-        represents: p,
-    });
-    g.addPath(p, Object.getPrototypeOf(p));
-};
 
 g.prim = function (v) {
     g.addNode({
         represents: v,
     });
-    if ((v !== null) && (v !== undefined)) {
-        g.addPath(v, Object.getPrototypeOf(v))
+    if (!isNullOrUndefined(v)) {
+        g.addPath(v, Object.getPrototypeOf(v)).where({ style: "bold" })
     }
 };
 
-g.inst = function (inst) {
+g.inst = function (ctor) {
     var args = Array.prototype.slice.call(arguments, 1),
-        ctor = inst.constructor;
+        inst;
+    switch (args.length) {
+        case 0: inst = new ctor();
+            break;
+        case 1: inst = new ctor(args[0]);
+            break;
+        case 2: inst = new ctor(args[0], args[1]);
+            break;
+        case 3: inst = new ctor(args[0], args[1], args[2]);
+            break;
+        case 4: inst = new ctor(args[0], args[1], args[2], args[3]);
+            break;
+        default:
+            throw new Error("not supported: synthetic constructor call with " + args.length + " arguments");
+    }
     g.addNode({
         rank:   6,
-        label:  (typeof inst) + '\nnew ' + ctor.name + '(' + args.map(util.inspect).join(', ') + ')',
+        label:  'object\nnew ' + ctor.name + '(' + args.map(util.inspect).join(', ') + ')',
         shape:  "box",
         represents: inst,
     });
-    g.addPath(inst, Object.getPrototypeOf(inst));
+    g.addPath(inst, Object.getPrototypeOf(inst)).where({ style: "bold" });
     if (typeof inst.valueOf === "function") {
         g.addPath(inst, inst.valueOf()).where({ color: "purple" });
     }
@@ -197,30 +196,24 @@ g.prim(NaN);
 g.prim(5);
 
 
-g.inst(new Boolean(true),  true);
-g.inst(new Boolean(false), false);
+g.inst(Boolean);
+g.inst(Boolean,  true);
+g.inst(Boolean, false);
 
-g.inst(new String());
-g.inst(new String(""), "");
-g.inst(new String("foo"), "foo");
-g.inst(new Number(5), 5);
-g.inst(new Number());
+g.inst(String);
+g.inst(String, "");
+g.inst(String, "foo");
+g.inst(Number, 5);
+g.inst(Number);
+g.inst(Number, NaN);
 
-
-[Object, Boolean, String].forEach(x =>
-    g.addPath(x, Object.getPrototypeOf(x))
-);
-
-[Foo, Bar].forEach(x =>
-    g.addPath(x, Object.getPrototypeOf(x))
-);
 
 
 //g.addPath(Function.prototype, Function.prototype.prototype).where({invis: true});
 
 
-g.inst(new Bar());
-g.inst(new Foo());
+g.inst(Bar);
+g.inst(Foo);
 
 
 //g.addPath(String, Boolean, Object).where({ style: "invis" });
