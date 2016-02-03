@@ -1,7 +1,7 @@
 "use strict";
 
 var util = require('util');
-var dotgraph = require('./lib/dotgraph');
+var dotgraph = require('../lib/dotgraph');
 
 
 function isPrimitive(v) {
@@ -207,26 +207,14 @@ g.inst(Number, 5);
 g.inst(Number);
 g.inst(Number, NaN);
 
-
-
-//g.addPath(Function.prototype, Function.prototype.prototype).where({invis: true});
-
-
 g.inst(Bar);
 g.inst(Foo);
 
+
+//g.addPath(Function.prototype, Function.prototype.prototype).where({invis: true});
 
 //g.addPath(String, Boolean, Object).where({ style: "invis" });
 //g.addPath(Bar, Foo).where({ style: "invis" });
 
 
 g.render({ output: 'example', format: 'svg', show: true });
-//process.exit();
-
-//https://chart.googleapis.com/chart?cht=gv%3Adot&chl=digraph%20poset%20%7B%0Af1%20%5Blabel%3Df1%5D%3B%0Af2%20%5Blabel%3Df2%5D%3B%0Af3%20%5Blabel%3Df3%5D%3B%0Af2%20-%3E%20f1%3B%0Af3%20-%3E%20f1%3B%0A%7D
-
-
-
-
-
-console.log(JSON.stringify(NaN));
