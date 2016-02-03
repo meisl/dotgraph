@@ -4,6 +4,12 @@ var util = require('util');
 var dotgraph = require('./lib/dotgraph');
 
 
+function isPrimitive(v) {
+    return (v === null) || ((typeof v) !== 'object') && ((typeof v) !== 'function');
+}
+
+
+
 function _getID(o, where) {
     var id,
         count = 0;
@@ -77,7 +83,6 @@ var g = dotgraph.label("Javascript prototypal inheritance")
 ;
 
 g.nodeIf(util.isFunction, {
-    label:      'function\n\\N', // \N is dot-specific and means "name (id) of this node as a string"
     color:      "red",
     fontcolor:  "red",
     shape:      "ellipse",
@@ -85,13 +90,13 @@ g.nodeIf(util.isFunction, {
 
 g.nodeIf(x => typeof x === "function",  { rank: 2 });
 g.nodeIf(x => x === Function,           { rank: 0 });
-g.nodeIf(x => x === Function.prototype, { rank: 1, label: "function\nFunction.prototype" });
+g.nodeIf(x => x === Function.prototype, { rank: 1 });   //, label: "function\nFunction.prototype" });
 
 g.nodeIf(x => typeof x === "object", {
     shape: "box",
 });
 
-g.nodeIf(x => (x === null) || (typeof x !== "object" && typeof x !== "function"), {
+g.nodeIf(isPrimitive, {
     rank:       5,
     color:      "purple",
     fontcolor:  "purple",
@@ -120,7 +125,6 @@ g.edgeIf((from, to) =>
 g.func = function (f) {
     var node;
     g.addNode({
-        id:         f.name,
         represents: f,
     });
     g.proto(f.prototype);
@@ -138,8 +142,6 @@ g.proto = function (p) {
     }
     g.addNode({
         rank:       rank,
-        id:         ctor.name + '_proto',
-        label:      (typeof p) + '\n' + ctor.name + '.prototype',
         represents: p,
     });
     g.addPath(p, Object.getPrototypeOf(p));
@@ -147,9 +149,6 @@ g.proto = function (p) {
 
 g.prim = function (v) {
     g.addNode({
-        rank:       5,
-        id:         util.isString(v) ? JSON.stringify(JSON.stringify(v)) : JSON.stringify(v),
-        label:      (typeof v) + '\n\\N',
         represents: v,
     });
     if ((v !== null) && (v !== undefined)) {
@@ -159,15 +158,13 @@ g.prim = function (v) {
 
 g.inst = function (inst) {
     var args = Array.prototype.slice.call(arguments, 1),
-        ctor = inst.constructor,
-        id   = '"new ' + ctor.name + '(' + args.map(util.inspect).join(', ') + ')"',
-        node = g.addNode({
-            rank:   6,
-            id:     id,
-            label:  (typeof inst) + '\n\\N',
-            shape:  "box",
-            represents: inst,
-        });
+        ctor = inst.constructor;
+    g.addNode({
+        rank:   6,
+        label:  (typeof inst) + '\nnew ' + ctor.name + '(' + args.map(util.inspect).join(', ') + ')',
+        shape:  "box",
+        represents: inst,
+    });
     g.addPath(inst, Object.getPrototypeOf(inst));
     if (typeof inst.valueOf === "function") {
         g.addPath(inst, inst.valueOf()).where({ color: "purple" });
@@ -187,6 +184,7 @@ g.func(Object);
 g.func(Function);
 g.func(Boolean);
 g.func(String);
+g.func(Number);
 g.func(Foo);
 g.func(Bar);
 
@@ -194,6 +192,9 @@ g.prim(true);
 g.prim(false);
 g.prim("");
 g.prim("foo");
+g.prim(0);
+g.prim(NaN);
+g.prim(5);
 
 
 g.inst(new Boolean(true),  true);
@@ -202,7 +203,8 @@ g.inst(new Boolean(false), false);
 g.inst(new String());
 g.inst(new String(""), "");
 g.inst(new String("foo"), "foo");
-
+g.inst(new Number(5), 5);
+g.inst(new Number());
 
 
 [Object, Boolean, String].forEach(x =>
@@ -234,3 +236,4 @@ g.render({ output: 'example', format: 'svg', show: true });
 
 
 
+console.log(JSON.stringify(NaN));
