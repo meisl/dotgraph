@@ -83,6 +83,10 @@ g.nodeIf(util.isFunction, {
     shape:      "ellipse",
 });
 
+g.nodeIf(x => typeof x === "function",  { rank: 2 });
+g.nodeIf(x => x === Function,           { rank: 0 });
+g.nodeIf(x => x === Function.prototype, { rank: 1, label: "function\nFunction.prototype" });
+
 g.nodeIf(x => typeof x === "object", {
     shape: "box",
 });
@@ -95,10 +99,6 @@ g.nodeIf(x => (x === null) || (typeof x !== "object" && typeof x !== "function")
     style:      "filled",
     shape:      "box",
 });
-
-g.nodeIf(x => typeof x === "function",  { rank: 2 });
-g.nodeIf(x => x === Function,           { rank: 0 });
-g.nodeIf(x => x === Function.prototype, { rank: 1 });
 
 
 g.edgeIf((from, to) => (from !== null) && (from !== undefined) && (to === Object.getPrototypeOf(from)), {
@@ -120,7 +120,6 @@ g.edgeIf((from, to) =>
 g.func = function (f) {
     var node;
     g.addNode({
-        rank:       f === Function ? 0 : 2,
         id:         f.name,
         represents: f,
     });
@@ -163,7 +162,6 @@ g.inst = function (inst) {
         ctor = inst.constructor,
         id   = '"new ' + ctor.name + '(' + args.map(util.inspect).join(', ') + ')"',
         node = g.addNode({
-            rank:  6,
             id:    id,
             label: (typeof inst) + '\n\\N',
             shape: "box",
@@ -213,6 +211,13 @@ g.inst(new String("foo"), "foo");
 [Foo, Bar].forEach(x =>
     g.addPath(x, Object.getPrototypeOf(x))
 );
+
+
+//g.addPath(Function.prototype, Function.prototype.prototype).where({invis: true});
+
+
+g.inst(new Bar());
+g.inst(new Foo());
 
 
 //g.addPath(String, Boolean, Object).where({ style: "invis" });
