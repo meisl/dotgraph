@@ -162,9 +162,10 @@ g.inst = function (inst) {
         ctor = inst.constructor,
         id   = '"new ' + ctor.name + '(' + args.map(util.inspect).join(', ') + ')"',
         node = g.addNode({
-            id:    id,
-            label: (typeof inst) + '\n\\N',
-            shape: "box",
+            rank:   6,
+            id:     id,
+            label:  (typeof inst) + '\n\\N',
+            shape:  "box",
             represents: inst,
         });
     g.addPath(inst, Object.getPrototypeOf(inst));
@@ -229,71 +230,7 @@ g.render({ output: 'example', format: 'svg', show: true });
 
 //https://chart.googleapis.com/chart?cht=gv%3Adot&chl=digraph%20poset%20%7B%0Af1%20%5Blabel%3Df1%5D%3B%0Af2%20%5Blabel%3Df2%5D%3B%0Af3%20%5Blabel%3Df3%5D%3B%0Af2%20-%3E%20f1%3B%0Af3%20-%3E%20f1%3B%0A%7D
 
-function toDot(x) {
-    const colors = [
-        "black",
-        "green",
-        "blue",
-        "red",
-        "pink",
-    ];
-    var res = "digraph {",
-        n, o, i, c, e,
-        ranks = [],
-        attrs, label;
-    for (n in x.nodes) {
-        o = x.nodes[n];
-        attrs = '';
-        switch (typeof o) {
-            case "function":
-                attrs = 'label="function\\n' + o.name + '"'
-                      + ',fontname="Arial"'
-                      + ',name=' + JSON.stringify(util.inspect(o))
-                ;
-                break;
-            case "object":
-                attrs = 'label="' + (o === null ? "null" : "object") + '"'
-                ;
-                break;
-            case "string":
-                attrs = 'label="string\\n' + JSON.stringify(JSON.stringify(o)).substr(1)
-                ;
-                break;
-            default:
-                attrs = 'label="' + (typeof o) + "\\n" + util.inspect(o) + '"'
-                ;
-        }
-        /*
-        if (o !== null && o !== undefined) {
-            Object.keys(o).forEach(e => {
-                label += "\\n." + e + ": "; // + util.inspect(o[e]);
-            });
-        }
-        */
-        res += '\n    ' + n + '[' + attrs + '];';
-    }
-    res += "\n";
-    i = 0;
-    for (n in x.edges) {
-        if (n !== ".constructor") {
-            c = colors[i % colors.length];
-            i++;
-            label = '[label="' + n + '"]';
-            res += "\n    "
-                + "/* " + n + " */"
-                + "\n    edge[color=" + c + ",fontcolor=" + c
-                + (n === "[[Prototype]]" ? ",weight=10,style=bold" : ",weight=1,style=solid")
-                + "];";
-            for (e in x.edges[n]) {
-                res += "\n    " + e + "->" + x.edges[n][e] + label + ";";
-                label = "";
-            }
-            res += "\n";
-        }
-    }
-    res += "\n}";
-    return res;
-}
+
 
 
 
